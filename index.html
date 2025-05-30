@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Style Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grid-gap: 12px; /* Define a CSS variable for the gap */
+            --button-size-desktop: 80px; /* Ideal button size for desktop/larger screens */
+            --button-size-mobile: 70px; /* Ideal button size for smaller screens */
+            --display-height: 100px; /* Fixed height for the display */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* Four equal columns */
+            gap: var(--grid-gap); /* Use CSS variable for gap */
+            padding: var(--grid-gap);
+            background-color: #202020; /* Darker background for the calculator body */
+            border-radius: 30px; /* More rounded corners for the calculator */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Softer, larger shadow */
+            
+            /* Enforce 9:16 portrait aspect ratio (width / height) */
+            aspect-ratio: 9 / 16;
+            
+            /* Calculate width based on button size and gaps */
+            width: calc(4 * var(--button-size-desktop) + 5 * var(--grid-gap));
+            max-width: 400px; /* Max width for desktop */
+            height: auto; /* Let height adjust based on aspect ratio */
+            
+            /* Ensure content scales within the grid */
+            align-content: space-between; /* Distribute rows evenly */
+            justify-items: center; /* Center items horizontally */
+        }
+
+        .display {
+            grid-column: span 4;
+            background-color: #202020;
+            color: white;
+            font-size: 4.5rem; /* Larger font for display */
+            text-align: right;
+            padding: 20px 25px;
+            border-radius: 20px; /* Rounded display */
+            margin-bottom: 10px;
+            overflow: hidden; /* Hide overflow text */
+            white-space: nowrap; /* Prevent wrapping */
+            text-overflow: ellipsis; /* Add ellipsis for overflow */
+            min-height: var(--display-height); /* Ensure display has enough height */
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            font-weight: 300; /* Lighter font weight for modern look */
+            width: 100%; /* Ensure display takes full width of its grid column */
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        .button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem; /* Larger button text */
+            font-weight: 500;
+            color: white;
+            background-color: #505050; /* Dark gray for number/operator buttons */
+            border-radius: 50%; /* Perfectly round buttons */
+            aspect-ratio: 1 / 1; /* Ensure buttons are square */
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Subtle button shadow */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+            
+            /* Use CSS variable for button size */
+            width: var(--button-size-desktop);
+            height: var(--button-size-desktop);
+        }
+
+        .button:active {
+            transform: scale(0.95); /* Slight press effect */
+        }
+
+        .button.operator {
+            background-color: #FF9500; /* Orange for operators */
+        }
+
+        .button.operator:active {
+            background-color: #e08400; /* Darker orange on press */
+        }
+
+        .button.function {
+            background-color: #D4D4D2; /* Light gray for function buttons */
+            color: black;
+        }
+
+        .button.function:active {
+            background-color: #c0c0be; /* Darker light gray on press */
+        }
+
+        .button.zero {
+            grid-column: span 2;
+            border-radius: 50px; /* Elongated for zero button */
+            justify-content: flex-start;
+            padding-left: calc(var(--button-size-desktop) / 3); /* Dynamic padding based on button size */
+            
+            /* Calculate width for zero button to span two columns and one gap */
+            width: calc(2 * var(--button-size-desktop) + var(--grid-gap));
+            height: var(--button-size-desktop); /* Keep height same as other buttons */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            :root {
+                --grid-gap: 10px; /* Smaller gap on mobile */
+                --display-height: 80px; /* Smaller display height on mobile */
+            }
+
+            .calculator-grid {
+                border-radius: 25px;
+                padding: var(--grid-gap);
+                /* Recalculate width for mobile button size */
+                width: calc(4 * var(--button-size-mobile) + 5 * var(--grid-gap));
+                max-width: 95vmin; /* Allow it to take more space on small screens */
+            }
+            .display {
+                font-size: 3.5rem; /* Adjust font size for smaller screens */
+                padding: 15px 20px;
+                min-height: var(--display-height);
+            }
+            .button {
+                font-size: 1.8rem;
+                width: var(--button-size-mobile);
+                height: var(--button-size-mobile);
+            }
+            .button.zero {
+                padding-left: calc(var(--button-size-mobile) / 3);
+                width: calc(2 * var(--button-size-mobile) + var(--grid-gap));
+                height: var(--button-size-mobile);
+            }
+        }
+
+        /* Font size adjustment for extremely long numbers */
+        .display.small-font {
+            font-size: 2.5rem !important; /* Even smaller font for very long numbers */
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-grid">
+        <div class="display" id="display">0</div>
+
+        <button class="button function" data-action="clear">AC</button>
+        <button class="button function" data-action="sign-change">+/-</button>
+        <button class="button function" data-action="percentage">%</button>
+        <button class="button operator" data-action="divide">/</button>
+
+        <button class="button" data-number="7">7</button>
+        <button class="button" data-number="8">8</button>
+        <button class="button" data-number="9">9</button>
+        <button class="button operator" data-action="multiply">*</button>
+
+        <button class="button" data-number="4">4</button>
+        <button class="button" data-number="5">5</button>
+        <button class="button" data-number="6">6</button>
+        <button class="button operator" data-action="subtract">-</button>
+
+        <button class="button" data-number="1">1</button>
+        <button class="button" data-number="2">2</button>
+        <button class="button" data-number="3">3</button>
+        <button class="button operator" data-action="add">+</button>
+
+        <button class="button zero" data-number="0">0</button>
+        <button class="button" data-action="decimal">.</button>
+        <button class="button operator" data-action="equals">=</button>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const display = document.getElementById('display');
+        const buttons = document.querySelectorAll('.button');
+
+        // Calculator state variables
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = null;
+        let waitingForSecondOperand = false; // Flag to indicate if we're waiting for the next number
+
+        /**
+         * Updates the calculator display.
+         * Ensures that the display doesn't exceed a certain length and handles 'AC' button text.
+         */
+        function updateDisplay() {
+            // Limit display length to prevent overflow, especially for large numbers
+            const maxDisplayLength = 9; // Max characters before font size might need adjustment or ellipsis
+            const veryLongDisplayLength = 12; // Threshold for even smaller font
+
+            if (currentInput.length > veryLongDisplayLength) {
+                display.classList.add('small-font');
+                display.style.fontSize = ''; // Let CSS class handle it
+            } else if (currentInput.length > maxDisplayLength) {
+                display.classList.remove('small-font');
+                display.style.fontSize = '3.5rem'; // Smaller font for long numbers
+            } else {
+                display.classList.remove('small-font');
+                display.style.fontSize = '4.5rem'; // Default font size
+            }
+            display.textContent = currentInput;
+
+            // Change 'AC' to 'C' if currentInput is not '0'
+            const clearButton = document.querySelector('[data-action="clear"]');
+            if (currentInput !== '0' || previousInput !== '' || operator !== null) {
+                clearButton.textContent = 'C';
+            } else {
+                clearButton.textContent = 'AC';
+            }
+        }
+
+        /**
+         * Resets the calculator to its initial state.
+         */
+        function clearCalculator() {
+            currentInput = '0';
+            previousInput = '';
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        /**
+         * Handles number button clicks.
+         * Appends the number to the current input or starts a new input.
+         * @param {string} number - The number string clicked.
+         */
+        function inputNumber(number) {
+            if (waitingForSecondOperand) {
+                currentInput = number;
+                waitingForSecondOperand = false;
+            } else {
+                // Prevent multiple leading zeros, allow single zero
+                currentInput = currentInput === '0' ? number : currentInput + number;
+            }
+            updateDisplay();
+        }
+
+        /**
+         * Handles decimal point click.
+         * Adds a decimal point if one doesn't already exist in the current input.
+         */
+        function inputDecimal() {
+            if (waitingForSecondOperand) {
+                currentInput = '0.'; // Start new input with 0. if waiting for operand
+                waitingForSecondOperand = false;
+            } else if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            updateDisplay();
+        }
+
+        /**
+         * Handles operator button clicks.
+         * Stores the operator and the current input as the previous input.
+         * If an operator was already selected, it computes the intermediate result.
+         * @param {string} nextOperator - The operator string clicked.
+         */
+        function handleOperator(nextOperator) {
+            const inputValue = parseFloat(currentInput);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator; // If chaining operators, just update the operator
+                return;
+            }
+
+            if (previousInput === '') {
+                previousInput = inputValue;
+            } else if (operator) {
+                const result = calculate(previousInput, inputValue, operator);
+                currentInput = String(result);
+                previousInput = result;
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            updateDisplay();
+        }
+
+        /**
+         * Performs the calculation based on the operator.
+         * @param {number} firstOperand - The first number.
+         * @param {number} secondOperand - The second number.
+         * @param {string} op - The operator (+, -, *, /).
+         * @returns {number | string} The result of the calculation or 'Error'.
+         */
+        function calculate(firstOperand, secondOperand, op) {
+            switch (op) {
+                case '+':
+                    return firstOperand + secondOperand;
+                case '-':
+                    return firstOperand - secondOperand;
+                case '*':
+                    return firstOperand * secondOperand;
+                case '/':
+                    if (secondOperand === 0) {
+                        return 'Error'; // Handle division by zero
+                    }
+                    return firstOperand / secondOperand;
+                default:
+                    return secondOperand; // Should not happen
+            }
+        }
+
+        /**
+         * Handles the equals button click.
+         * Computes the final result.
+         */
+        function equals() {
+            if (operator === null || waitingForSecondOperand) {
+                return; // Do nothing if no operator or waiting for second operand
+            }
+
+            const inputValue = parseFloat(currentInput);
+            const result = calculate(previousInput, inputValue, operator);
+
+            currentInput = String(result);
+            operator = null;
+            previousInput = '';
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        /**
+         * Toggles the sign of the current input.
+         */
+        function changeSign() {
+            currentInput = String(parseFloat(currentInput) * -1);
+            updateDisplay();
+        }
+
+        /**
+         * Calculates the percentage of the current input.
+         * If an operator is present, it calculates the percentage of the previous input
+         * relative to the current input (e.g., 100 + 10% = 110).
+         */
+        function calculatePercentage() {
+            let value = parseFloat(currentInput);
+            if (operator && previousInput !== '') {
+                // If an operator is active, percentage acts on the previous input
+                // e.g., 100 + 10% means 100 + (100 * 0.10)
+                // e.g., 100 * 10% means 100 * (0.10)
+                const prev = parseFloat(previousInput);
+                if (operator === '+' || operator === '-') {
+                    value = prev * (value / 100);
+                } else { // For multiplication and division
+                    value = value / 100;
+                }
+            } else {
+                value = value / 100;
+            }
+            currentInput = String(value);
+            updateDisplay();
+        }
+
+        /**
+         * Handles the 'C' (Clear Entry) functionality.
+         * If the display is not '0', it clears the current input.
+         * If the display is '0', it acts as 'AC' (All Clear).
+         */
+        function clearEntry() {
+            if (currentInput !== '0') {
+                currentInput = '0';
+            } else {
+                clearCalculator(); // If already '0', perform All Clear
+            }
+            updateDisplay();
+        }
+
+        // Event listener for all calculator buttons
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const action = button.dataset.action;
+                const number = button.dataset.number;
+
+                if (number !== undefined) {
+                    inputNumber(number);
+                } else if (action === 'decimal') {
+                    inputDecimal();
+                } else if (action === 'add' || action === 'subtract' || action === 'multiply' || action === 'divide') {
+                    handleOperator(action === 'add' ? '+' : action === 'subtract' ? '-' : action === 'multiply' ? '*' : '/');
+                } else if (action === 'equals') {
+                    equals();
+                } else if (action === 'clear') {
+                    clearEntry(); // Use clearEntry for C/AC logic
+                } else if (action === 'sign-change') {
+                    changeSign();
+                } else if (action === 'percentage') {
+                    calculatePercentage();
+                }
+            });
+        });
+
+        // Initialize display on load
+        updateDisplay();
+    </script>
+
+</body></html>
+
